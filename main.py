@@ -18,6 +18,7 @@ from contextlib import asynccontextmanager
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN", "")
 PORT = int(os.getenv("PORT", 8888))
 DB_PATH = os.getenv("DB_PATH", "database.db")
+TICKET_MENTION_ROLE_ID = 1548279694703730789
 
 DEFAULT_SETTINGS = {
     "roblox_group_id": 726824718,
@@ -266,15 +267,15 @@ class TicketSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         guild, settings = interaction.guild, get_guild_settings(interaction.guild_id)
-        staff_role = guild.get_role(parse_id(settings.get("ticket_staff_role_id")))
+        staff_role = guild.get_role(TICKET_MENTION_ROLE_ID)
         category = guild.get_channel(parse_id(settings.get("ticket_category_id")))
         overwrites = {guild.default_role: discord.PermissionOverwrite(view_channel=False), interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True), guild.me: discord.PermissionOverwrite(view_channel=True, manage_channels=True)}
         if staff_role: overwrites[staff_role] = discord.PermissionOverwrite(view_channel=True, send_messages=True)
         try:
             ch = await guild.create_text_channel(name=f"ticket-{interaction.user.name}-{self.values[0]}"[:30], category=category, overwrites=overwrites)
             with sqlite3.connect(DB_PATH) as conn: conn.execute("INSERT INTO active_tickets VALUES (?, ?, ?, ?)", (str(ch.id), str(guild.id), str(interaction.user.id), self.values[0]))
-            embed = discord.Embed(title=f"Ticket: {self.values[0].replace('_',' ').title()}", description=f"Hello {interaction.user.mention}, staff will assist you shortly.", color=0x3498DB)
-            await ch.send(content=f"{staff_role.mention if staff_role else ''} {interaction.user.mention}", embed=embed)
+            embed = discord.Embed(title=f"Ticket: {self.values[0].replace('_',' ').title()}", description=f"สวัสดีครับ/ค่ะ {interaction.user.mention} มีอะไรสอบถามไหมครับ/ค่ะ", color=0x3498DB)
+            await ch.send(content=f"<@&{TICKET_MENTION_ROLE_ID}> {interaction.user.mention}", embed=embed)
             await interaction.followup.send(f"✅ Ticket created: {ch.mention}", ephemeral=True)
         except Exception as e: await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
 
