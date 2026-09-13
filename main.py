@@ -103,6 +103,20 @@ def get_safe_emoji(emoji_str):
     return emoji_str
 
 # =========================
+# INTERACTION ERROR HANDLING
+# =========================
+async def respond_to_interaction_error(interaction: discord.Interaction, error: Exception):
+    message = "❌ เกิดข้อผิดพลาดในการทำงานของบอท กรุณาลองใหม่อีกครั้ง"
+    print(f"Interaction error: {type(error).__name__}: {error}")
+    try:
+        if interaction.response.is_done():
+            await interaction.followup.send(message, ephemeral=True)
+        else:
+            await interaction.response.send_message(message, ephemeral=True)
+    except Exception as send_error:
+        print(f"Could not send interaction error response: {send_error}")
+
+# =========================
 # BOT CLASS
 # =========================
 class MyBot(commands.Bot):
@@ -119,6 +133,11 @@ class MyBot(commands.Bot):
         print(f"Bot synced as {self.user}")
 
 bot = MyBot()
+
+@bot.tree.error
+async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    original = getattr(error, "original", error)
+    await respond_to_interaction_error(interaction, original)
 
 # =========================
 # UTILS
@@ -303,7 +322,8 @@ async def setup_t(interaction: discord.Interaction):
 @bot.tree.command(name="ปิดticket", description="Close ticket")
 @app_commands.default_permissions(administrator=True)
 async def close_t(interaction: discord.Interaction):
-    await interaction.response.defer(ephemeral=True); s = get_guild_settings(interaction.guild_id); ch = interaction.channel
+    await interaction.response.defer(ephemeral=True)
+    s = get_guild_settings(interaction.guild_id); ch = interaction.channel
     f_emoji = s["emojis"].get("folder", "📁")
     l_emoji = s["emojis"].get("lock", "🔒")
     html = f"<html><body><h1>Transcript: {ch.name}</h1>"
@@ -332,17 +352,20 @@ async def ask_th(interaction: discord.Interaction): await send_ask_more_embed(in
 @bot.tree.command(name="ตั้งค่าห้องtranscript", description="Set transcript channel")
 @app_commands.default_permissions(administrator=True)
 async def set_trans(interaction: discord.Interaction, channel: discord.TextChannel):
+    await interaction.response.defer(ephemeral=True)
     s = get_guild_settings(interaction.guild_id); s["transcript_channel_id"] = channel.id; save_guild_settings(interaction.guild_id, s)
-    await interaction.response.send_message(f"✅ Transcript channel set to {channel.mention}", ephemeral=True)
+    await interaction.followup.send(f"✅ Transcript channel set to {channel.mention}", ephemeral=True)
 
 @bot.tree.command(name="ตั้งค่าหมวดหมู่ticket", description="Set ticket category")
 @app_commands.default_permissions(administrator=True)
 async def set_cat(interaction: discord.Interaction, category: discord.CategoryChannel):
+    await interaction.response.defer(ephemeral=True)
     s = get_guild_settings(interaction.guild_id); s["ticket_category_id"] = category.id; save_guild_settings(interaction.guild_id, s)
-    await interaction.response.send_message(f"✅ Ticket category set to **{category.name}**", ephemeral=True)
+    await interaction.followup.send(f"✅ Ticket category set to **{category.name}**", ephemeral=True)
 
 @bot.tree.command(name="อื่นๆ", description="ดูคำสั่งเพิ่มเติมอื่นๆ ของระบบ")
 async def others_cmd(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
     s = get_guild_settings(interaction.guild_id)
     i_emoji = s["emojis"].get("info", "ℹ️")
     embed = discord.Embed(title=f"{i_emoji} คำสั่งเพิ่มเติมอื่นๆ", color=0x95A5A6)
@@ -350,7 +373,7 @@ async def others_cmd(interaction: discord.Interaction):
     embed.add_field(name="/มีอะไรสอบถามเพิ่มเติมไหม_en", value="ส่งข้อความถามผู้ใช้ใน Ticket (EN)", inline=False)
     embed.add_field(name="/ตั้งค่าห้องtranscript", value="ตั้งค่าห้องเก็บประวัติ Ticket", inline=False)
     embed.add_field(name="/ตั้งค่าหมวดหมู่ticket", value="ตั้งค่าหมวดหมู่สำหรับสร้าง Ticket", inline=False)
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await interaction.followup.send(embed=embed, ephemeral=True)
 
 @bot.tree.command(name="ปรับแต่งทั้งหมด", description="Customize settings")
 @app_commands.default_permissions(administrator=True)
