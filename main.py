@@ -275,7 +275,7 @@ class TicketSelect(discord.ui.Select):
             ch = await guild.create_text_channel(name=f"ticket-{interaction.user.name}-{self.values[0]}"[:30], category=category, overwrites=overwrites)
             with sqlite3.connect(DB_PATH) as conn: conn.execute("INSERT INTO active_tickets VALUES (?, ?, ?, ?)", (str(ch.id), str(guild.id), str(interaction.user.id), self.values[0]))
             embed = discord.Embed(title=f"Ticket: {self.values[0].replace('_',' ').title()}", description=f"สวัสดีครับ/ค่ะ {interaction.user.mention} มีอะไรสอบถามไหมครับ/ค่ะ", color=0x3498DB)
-            await ch.send(content=f"<@&{TICKET_MENTION_ROLE_ID}> {interaction.user.mention}", embed=embed)
+            await ch.send(content=f"<@&{TICKET_MENTION_ROLE_ID}>", embed=embed)
             await interaction.followup.send(f"✅ Ticket created: {ch.mention}", ephemeral=True)
         except Exception as e: await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
 
